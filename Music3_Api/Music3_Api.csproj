@@ -4,4 +4,10 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Infrastructure\AutofacModules\" />
+    <Folder Include="Infrastructure\ElasticSearch\" />
+    <Folder Include="Proto\" />
+  </ItemGroup>
+
 </Project>
