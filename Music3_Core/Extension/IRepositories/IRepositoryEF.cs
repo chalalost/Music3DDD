@@ -17,7 +17,7 @@ namespace Music3_Core.Extension.IRepositories
             Expression<Func<T, bool>> filter = null,
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, int records = 0,
             string includeProperties = "");
-        public Task<IEnumerable<T>> GetAync(
+        public Task<IEnumerable<T>> GetAsync(
         Expression<Func<T, bool>> filter = null,
         Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, int records = 0,
         string includeProperties = "");

@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Music3_Core.QueryCommand
+namespace Music3_Core.Extension.Repositories
 {
     public class RepositoryEF<T> : IRepositoryEF<T> where T : BaseEntity, new()
     {
@@ -62,9 +62,9 @@ namespace Music3_Core.QueryCommand
 
             return query.AsNoTracking().ToList();
         }
-        //aync
+        //async
 
-        public async Task<IEnumerable<T>> GetAync(
+        public async Task<IEnumerable<T>> GetAsync(
           Expression<Func<T, bool>> filter = null,
           Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, int records = 0,
           string includeProperties = "")

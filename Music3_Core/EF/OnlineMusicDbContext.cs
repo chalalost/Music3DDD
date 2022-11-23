@@ -28,10 +28,6 @@ namespace Music3_Core.EF
             System.Diagnostics.Debug.WriteLine("OnlineMusicDbContext::ctor ->" + this.GetHashCode());
         }
 
-        public IDbContextTransaction GetCurrentTransaction() => _currentTransaction;
-
-        public bool HasActiveTransaction => _currentTransaction != null;
-
         public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             // Dispatch Domain Events collection. 
