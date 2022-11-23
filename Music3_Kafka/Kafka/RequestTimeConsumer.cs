@@ -61,7 +61,6 @@ namespace Music3_Kafka.Kafka
             return Task.CompletedTask;
         }
 
-        [Obsolete]
         private async Task StartConsumerLoop(CancellationToken cancellationToken)
         {
             Log.Information("Listen to Kafka");
