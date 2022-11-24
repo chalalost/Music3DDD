@@ -1,16 +1,24 @@
 ﻿using Elasticsearch.Net;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Music3_Api.AutoMapper.Config;
+using Music3_Api.Models.Email;
+using Music3_Api.SignalR;
+using Music3_Core.DomainModels;
 using Music3_Core.EF;
 using Music3_Core.Entities;
+using Music3_Kafka.Kafka;
 using Nest;
 using Nest.JsonNetSerializer;
 using Newtonsoft.Json;
@@ -35,10 +43,15 @@ namespace Music3_Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews();
-            //services.AddCustomConfiguration(Configuration);
-            //services.AddMapper();
-            services.AddIdentity<AppUser, AppRole>(options => {
+            services.AddHttpClient();
+            services.AddMapper();
+            //khai bao db tu appsettings
+            services.AddDbContext<OnlineMusicDbContext>(options =>
+            options.UseSqlServer(Configuration.GetConnectionString("OnlineMusicDbContext")));
+
+            //setup, su dung identity server 4
+            services.AddIdentity<AppUser, AppRole>(options =>
+            {
             })
                 .AddEntityFrameworkStores<OnlineMusicDbContext>()
                 .AddDefaultTokenProviders();
@@ -46,6 +59,9 @@ namespace Music3_Api
             {
                 options.TokenLifespan = TimeSpan.FromHours(2);
             });
+            services.AddControllers()
+            .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<LoginRequestValidatorDomainModel>());
+            services.AddHttpContextAccessor();
 
             //swagger
             services.AddSwaggerGen(c =>
@@ -72,14 +88,41 @@ namespace Music3_Api
                           {
                             Type = ReferenceType.SecurityScheme,
                             Id = "Bearer"
-                          },
+                        },
                           Scheme = "oauth2",
                           Name = "Bearer",
                           In = ParameterLocation.Header,
-                        },
+                      },
                         new List<string>()
-                      }
-                    });
+                    }
+                });
+            });
+
+            //Authen
+            //xu ly token tu appsettings
+            string issuer = Configuration.GetValue<string>("Tokens:Issuer");
+            string signingKey = Configuration.GetValue<string>("Tokens:Key");
+            byte[] signingKeyBytes = System.Text.Encoding.UTF8.GetBytes(signingKey);
+            services.AddAuthentication(opt =>
+            {
+                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = issuer,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ClockSkew = System.TimeSpan.Zero,
+                    IssuerSigningKey = new SymmetricSecurityKey(signingKeyBytes)
+                };
             });
 
             //add trasient, scoped
@@ -120,34 +163,8 @@ namespace Music3_Api
                     });
                 return new ElasticClient(settings);
             });
-
-            //Authen
-            //xu ly token tu appsettings
-            string issuer = Configuration.GetValue<string>("Tokens:Issuer");
-            string signingKey = Configuration.GetValue<string>("Tokens:Key");
-            byte[] signingKeyBytes = System.Text.Encoding.UTF8.GetBytes(signingKey);
-            services.AddAuthentication(opt =>
-            {
-                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = issuer,
-                    ValidateAudience = true,
-                    ValidAudience = issuer,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ClockSkew = System.TimeSpan.Zero,
-                    IssuerSigningKey = new SymmetricSecurityKey(signingKeyBytes)
-                };
-            });
-            services.AddHttpContextAccessor();
+            services.AddTransient<IEmailSender, EmailSender>();
+            services.AddSingleton<IKafKaConnection, KafKaConnection>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -179,6 +196,7 @@ namespace Music3_Api
 
             app.UseEndpoints(endpoints =>
             {
+                //endpoints.MapHub<SignalRHub>("/signalr");
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
