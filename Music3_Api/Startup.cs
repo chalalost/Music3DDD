@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Music3_Api.Applications.RedisCache;
 using Music3_Api.AutoMapper.Config;
 using Music3_Api.Models.Email;
 using Music3_Api.SignalR;
@@ -45,6 +46,7 @@ namespace Music3_Api
         {
             services.AddHttpClient();
             services.AddMapper();
+            services.AddCache(Configuration);
             //khai bao db tu appsettings
             services.AddDbContext<OnlineMusicDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("OnlineMusicDbContext")));
@@ -59,6 +61,7 @@ namespace Music3_Api
             {
                 options.TokenLifespan = TimeSpan.FromHours(2);
             });
+
             services.AddControllers()
             .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<LoginRequestValidatorDomainModel>());
             services.AddHttpContextAccessor();
@@ -99,33 +102,28 @@ namespace Music3_Api
             });
 
             //Authen
-            //xu ly token tu appsettings
-            string issuer = Configuration.GetValue<string>("Tokens:Issuer");
-            string signingKey = Configuration.GetValue<string>("Tokens:Key");
-            byte[] signingKeyBytes = System.Text.Encoding.UTF8.GetBytes(signingKey);
-            services.AddAuthentication(opt =>
+            services.AddAuthentication(options =>
             {
-                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = issuer,
-                    ValidateAudience = true,
-                    ValidAudience = issuer,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ClockSkew = System.TimeSpan.Zero,
-                    IssuerSigningKey = new SymmetricSecurityKey(signingKeyBytes)
-                };
-            });
 
-            //add trasient, scoped
+                // Adding Jwt Bearer  
+                .AddJwtBearer(options =>
+                {
+                    options.SaveToken = true;
+                    options.RequireHttpsMetadata = false;
+                    options.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidAudience = Configuration["JWT:ValidAudience"],
+                        ValidIssuer = Configuration["JWT:ValidIssuer"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"]))
+                    };
+                });
+
             services.AddScoped<IElasticClient, ElasticClient>(sp =>
             {
                 var connectionPool = new SingleNodeConnectionPool(new Uri(Configuration.GetValue<string>("Elastic:Url")));
@@ -163,6 +161,7 @@ namespace Music3_Api
                     });
                 return new ElasticClient(settings);
             });
+
             services.AddTransient<IEmailSender, EmailSender>();
             services.AddSingleton<IKafKaConnection, KafKaConnection>();
         }

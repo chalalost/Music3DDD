@@ -27,7 +27,7 @@ namespace Music3_Kafka.Kafka
         private readonly IKafKaConnection _kafKaConnection;
         private readonly string topic;
         private readonly IConsumer<string, byte[]> kafkaConsumer;
-        private string Topic = "WareHouse-KafKa";
+        private string Topic = "OnlineMusic-KafKa";
         private readonly ILogger<EventKafKa> _logger;
         private readonly IEventBusSubscriptionsManager _subsManager;
         private readonly ILifetimeScope _autofac;
