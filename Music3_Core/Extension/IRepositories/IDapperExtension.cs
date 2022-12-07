@@ -9,7 +9,7 @@ using Dapper;
 
 namespace Music3_Core.Extension.IRepositories
 {
-    public interface IDapper : IDisposable
+    public interface IDapperExtension : IDisposable
     {
         DbConnection GetDbconnection();
 
@@ -24,6 +24,5 @@ namespace Music3_Core.Extension.IRepositories
 
         Task<IEnumerable<T>> GetListByListId<T>(IEnumerable<string> listId, string nameEntity, CommandType commandType);
 
-        Task<int> CheckCode<T>(string code, string nameEntity);
     }
 }

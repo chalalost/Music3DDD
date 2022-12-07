@@ -1,9 +1,10 @@
-﻿using Elasticsearch.Net;
+﻿using Autofac;
+using Elasticsearch.Net;
 using FluentValidation.AspNetCore;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,13 @@ using Microsoft.OpenApi.Models;
 using Music3_Api.Applications.RedisCache;
 using Music3_Api.AutoMapper.Config;
 using Music3_Api.Models.Email;
+using Music3_Api.Paging;
 using Music3_Api.SignalR;
 using Music3_Core.DomainModels;
 using Music3_Core.EF;
 using Music3_Core.Entities;
+using Music3_Core.Extension.IRepositories;
+using Music3_Core.Extension.Repositories;
 using Music3_Kafka.Kafka;
 using Nest;
 using Nest.JsonNetSerializer;
@@ -27,6 +31,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -38,7 +43,7 @@ namespace Music3_Api
         {
             Configuration = configuration;
         }
-
+        public ILifetimeScope AutofacContainer { get; private set; }
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -51,6 +56,7 @@ namespace Music3_Api
             services.AddDbContext<OnlineMusicDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("OnlineMusicDbContext")));
 
+            services.AddMediatR(Assembly.GetExecutingAssembly());
             //setup, su dung identity server 4
             services.AddIdentity<AppUser, AppRole>(options =>
             {
@@ -164,6 +170,14 @@ namespace Music3_Api
 
             services.AddTransient<IEmailSender, EmailSender>();
             services.AddSingleton<IKafKaConnection, KafKaConnection>();
+            services.AddScoped(typeof(IPaginatedList<>), typeof(PaginatedList<>));
+            services.AddScoped(typeof(IRepositoryEF<>), typeof(RepositoryEF<>));
+            services.AddScoped<IDapperExtension, DapperExtension>(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                return new DapperExtension(config);
+
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -179,17 +193,17 @@ namespace Music3_Api
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+            //this.AutofacContainer = app.ApplicationServices.GetAutofacRoot();
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger MusicVer3"));
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger MusicVer3");
-            });
-
+            
             app.UseAuthentication();
             app.UseAuthorization();
 
