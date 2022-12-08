@@ -1,4 +1,5 @@
 ﻿using Music3_Core.Entities;
+using Music3_Core.Entities.BaseEntity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Transactions;
 
 namespace Music3_Core.DomainModels
 {
-    public class TransactionDomainModel
+    public class TransactionDomainModel : BaseEntity
     {
         public int Id { set; get; }
         public DateTime TransactionDate { set; get; }

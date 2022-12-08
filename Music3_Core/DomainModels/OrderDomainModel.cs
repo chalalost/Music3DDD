@@ -1,4 +1,5 @@
 ﻿using Music3_Core.Entities;
+using Music3_Core.Entities.BaseEntity;
 using Music3_Core.Enums;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Music3_Core.DomainModels
 {
-    public class OrderDomainModel
+    public class OrderDomainModel : BaseEntity
     {
         public int Id { set; get; }
         public DateTime OrderDate { set; get; }

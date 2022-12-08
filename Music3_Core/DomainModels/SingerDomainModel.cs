@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Music3_Core.Entities.BaseEntity;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Music3_Core.DomainModels
 {
-    public class SingerDomainModel
+    public class SingerDomainModel : BaseEntity
     {
         [Key]
         public long SingerID { get; set; }

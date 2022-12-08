@@ -1,4 +1,5 @@
 ﻿using Music3_Core.Entities;
+using Music3_Core.Entities.BaseEntity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Music3_Core.DomainModels
 {
-    public class ProductImageDomainModel
+    public class ProductImageDomainModel : BaseEntity
     {
         public int Id { get; set; }
 

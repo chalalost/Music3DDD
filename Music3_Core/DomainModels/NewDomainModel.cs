@@ -6,10 +6,11 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Music3_Core.Entities.BaseEntity;
 
 namespace Music3_Core.DomainModels
 {
-    public class NewDomainModel
+    public class NewDomainModel : BaseEntity
     {
         public long ID { get; set; }
 
